@@ -1,7 +1,5 @@
-const mysql = require("mysql");
 const db = require('./db/connection.js');
 const inquirer = require("inquirer");
-// require("console.table");
 
 // Start server after DB connection
 db.connect(function (err) {
@@ -54,12 +52,12 @@ function firstPrompt() {
       });
   }
 
-//View Employees"/ READ all, SELECT * FROM
+//1. View Employees
 function viewEmployee() {
     console.log("Viewing employees\n");
 
     var query =
-    `SELECT e.id, e.first_name, e.last_name, r.title, d.name AS department, r.salary, CONCAT(m.first_name, ' ', m.last_name) AS manager
+    `SELECT e.id, e.first_name, e.last_name, r.title, d.name AS department, r.salary, CONCAT(m.first_name, ' ', m.last_name) AS manager    
     FROM employee e
     LEFT JOIN role r
       ON e.role_id = r.id
@@ -76,4 +74,57 @@ function viewEmployee() {
     
         firstPrompt();
       });
+}
+
+//2. View Employees by Department
+function viewEmployeeByDepartment() {
+    console.log("Employees by department\n");
+
+    const query = 
+    `SELECT d.id, d.name
+    FROM department d`
+
+db.query(query, function (err, res) {
+    if (err) throw err;
+
+    const deptChoice = res.map(data => ({ 
+        value: data.id, name: data.name 
+    }));
+    console.table(res)
+    promptDepartment(deptChoice)
+});
+}
+
+function promptDepartment(deptChoice) {
+    
+    inquirer
+        .prompt([
+            {
+                type: "list",
+                name: "departmentId",
+                message: "Choose which department",
+                choices: deptChoice
+            }
+        ])
+        .then (function (answer) {
+            console.log("answer ", answer.departmentId);
+        
+        const query = 
+        `SELECT e.id, e.first_name, e.last_name, r.title, d.name AS department
+        FROM employee e
+        JOIN role r
+        ON e.role_id = r.id
+        JOIN department d 
+        ON d.id = r.department_id
+        WHERE d.id = ?`
+        
+        db.query(query, answer.departmentId, function (err, res) {
+            if (err) throw err;
+    
+            console.table(res);
+            console.log(res.affectedRows + "Employees are viewed!\n");
+    
+            firstPrompt();
+        });
+    });
 }
