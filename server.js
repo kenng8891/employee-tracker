@@ -1,14 +1,7 @@
-const express = require('express');
+const mysql = require("mysql");
 const db = require('./db/connection.js');
 const inquirer = require("inquirer");
 // require("console.table");
-
-
-const PORT = process.env.PORT || 3001;
-const app = express();
-
-app.use(express.urlencoded({ extended: false }));
-app.use(express.json());
 
 // Start server after DB connection
 db.connect(function (err) {
@@ -55,7 +48,7 @@ function firstPrompt() {
             addRole();
             break;
           case "End":
-            connection.end();
+            db.end();
             break;
         }
       });
@@ -65,22 +58,22 @@ function firstPrompt() {
 function viewEmployee() {
     console.log("Viewing employees\n");
 
-    var query = 
-    `SELECT employee.id, employee.first_name, employee.last_name, role.title, department.name AS department, role.salary,  CONCAT(m.first_name, " ", m.last_name) AS manager
+    var query =
+    `SELECT e.id, e.first_name, e.last_name, r.title, d.name AS department, r.salary, CONCAT(m.first_name, ' ', m.last_name) AS manager
     FROM employee e
-  LEFT JOIN role r
-	ON e.role_id = r.id
-  LEFT JOIN department d
-  ON d.id = r.department_id
-  LEFT JOIN employee m
-	ON m.id = e.manager_id`
+    LEFT JOIN role r
+      ON e.role_id = r.id
+    LEFT JOIN department d
+    ON d.id = r.department_id
+    LEFT JOIN employee m
+      ON m.id = e.manager_id`
 
     db.query(query, function (err, res) {
         if (err) throw err;
-
+    
         console.table(res);
-        console.log("Employees viewed")
-
+        console.log("Employees viewed!\n");
+    
         firstPrompt();
-    });
+      });
 }
