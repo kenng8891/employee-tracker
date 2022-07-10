@@ -128,3 +128,75 @@ function promptDepartment(deptChoice) {
         });
     });
 }
+
+//3. Add Employee
+
+function addEmployee () {
+  console.log("Adding an employee")
+
+  const query = 
+    `SELECT role.id, role.title, role.salary FROM role`
+
+  db.query(query, function (err, res) {
+    if (err) throw err;
+
+  const roles = res.map(({ id, title, salary}) => ({
+    value: id, title: `${title}`, salary: `${salary}`
+  }));
+
+  console.table(res);
+  console.log("roles picker")
+
+  promptRoles(roles)
+  });
+}
+
+function promptRoles(roles) {
+  
+  inquirer
+    .prompt([
+      {
+        type: "input",
+        name: "first_name",
+        message: "What is the employee's first name"
+      },
+      {
+        type: "input",
+        name: "last_name",
+        message: "What is the employee's last name?"
+      },
+      {
+        type: "list",
+        name: "roleId",
+        message: "What is the employee's role?",
+        choices: roles
+      },
+      {
+        type: "input",
+        name: "manager_id",
+        message: "what is the employee's manager ID"
+      },
+    ])
+
+    .then(function (answer) {
+      console.log(answer);
+
+    const query = `INSERT INTO employee SET ?`
+
+    db.query(query, 
+      {
+        first_name: answer.first_name,
+        last_name: answer.last_name,
+        role_id: answer.roleId,
+        manager_id: answer.manager_id
+      },
+      function (err, res) {
+        if (err) throw err;
+
+        console.table(res);
+
+        firstPrompt();
+      });
+  });
+}
+
