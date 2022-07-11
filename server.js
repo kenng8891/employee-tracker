@@ -200,3 +200,133 @@ function promptRoles(roles) {
   });
 }
 
+//4. Remove Employees
+
+function removeEmployees() {
+  console.log("Deleting an employee")
+
+  const query = `SELECT employee.id, employee.first_name, employee.last_name FROM employee`
+
+  db.query(query, function (err, res) {
+    if (err) throw err;
+
+    const deleteEmployee = res.map(({ id, first_name, last_name }) => ({
+      value: id, name: `${id} ${first_name} ${last_name}`
+    }));
+
+    console.table(res)
+    
+    promptDelete(deleteEmployee)
+  })
+}
+function promptDelete(deleteEmployee) {
+
+  inquirer
+    .prompt([
+      {
+        type: "list",
+        name: "employeeId",
+        message: "Which employee do you want to delete?",
+        choices: deleteEmployee
+      }
+    ])
+    .then(function (answer) {
+
+      const query = `DELETE FROM employee WHERE ?`;
+
+      db.query(query, { id: answer.employeeId}, function (err, res) {
+        if (err) throw err;
+
+        console.table(res);
+
+        firstPrompt()
+      });
+    });
+}
+
+//5. Update Employee Role
+
+function updateEmployeeRole () {
+  employeeArray();
+
+}
+
+  function employeeArray () {
+    console.log("Update employee role");
+
+    const query = `SELECT e.id, e.first_name, e.last_name, r.title, d.name AS department, r.salary, CONCAT(m.first_name, ' ', m.last_name) AS manager
+    FROM employee e
+    JOIN role r
+    ON e.role_id = r.id
+    JOIN department d
+    ON d.id = r.department_id
+    JOIN employee m
+    ON m.id = e.manager_id`
+
+    db.query(query, function (err, res) {
+      if (err) throw err;
+
+      const eChoices = res.map(({ id, first_name, last_name }) => ({
+        value: id, name: `${first_name} ${last_name}`      
+      }));
+
+      console.table(res);
+
+      roleArray(eChoices)
+    });
+}
+
+function roleArray(eChoices) {
+  console.log("Updating a role");
+
+  const query = `SELECT r.id, r.title, r.salary FROM role r`
+  
+  db.query(query, function (err, res) {
+    if (err) throw err;
+
+   const roleChoices = res.map(({ id, title, salary }) => ({
+    value: id, title: `${title}`, salary: `${salary}`      
+  }));
+
+  console.table(res);
+
+  promptRoles(eChoices, roleChoices);
+  });
+}
+
+function promptRoles(eChoices, roleChoices) {
+
+  inquirer
+    .prompt([
+      {
+        type: "list",
+        name: "employeeId",
+        message: "Which employee do you want to set with the role?",
+        choices: eChoices
+      },
+      {
+        type: "list",
+        name: "roleId",
+        message: "Which role do you want to update?",
+        choices: roleChoices
+      },
+    ])
+    .then(function (answer) {
+
+      const query = `UPDATE employee SET role_id = ? WHERE id = ?`
+      // when finished prompting, insert a new item into the db with that info
+      db.query(query,
+        [ answer.roleId,  
+          answer.employeeId
+        ],
+        function (err, res) {
+          if (err) throw err;
+
+          console.table(res);
+          console.log(res.affectedRows + "Updated successfully!");
+
+          firstPrompt();
+        });
+    });
+}
+
