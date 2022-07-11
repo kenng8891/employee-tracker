@@ -254,14 +254,14 @@ function updateEmployeeRole () {
   function employeeArray () {
     console.log("Update employee role");
 
-    const query = `SELECT e.id, e.first_name, e.last_name, r.title, d.name AS department, r.salary, CONCAT(m.first_name, ' ', m.last_name) AS manager
+    const query = `SELECT e.id, e.first_name, e.last_name, r.title, d.name AS department, r.salary, CONCAT(m.first_name, ' ', m.last_name) AS manager    
     FROM employee e
-    JOIN role r
-    ON e.role_id = r.id
-    JOIN department d
+    LEFT JOIN role r
+      ON e.role_id = r.id
+    LEFT JOIN department d
     ON d.id = r.department_id
-    JOIN employee m
-    ON m.id = e.manager_id`
+    LEFT JOIN employee m
+      ON m.id = e.manager_id`
 
     db.query(query, function (err, res) {
       if (err) throw err;
@@ -301,14 +301,14 @@ function promptRoles(eChoices, roleChoices) {
       {
         type: "list",
         name: "employeeId",
-        message: "Which employee do you want to set with the role?",
-        choices: eChoices
+        message: "Which role do you want to set with the employee?",
+        choices: roleChoices
       },
       {
         type: "list",
         name: "roleId",
-        message: "Which role do you want to update?",
-        choices: roleChoices
+        message: "Which employee do you want to update?",
+        choices: eChoices
       },
     ])
     .then(function (answer) {
@@ -330,3 +330,70 @@ function promptRoles(eChoices, roleChoices) {
     });
 }
 
+// 6. Add role 
+
+function addRole() {
+
+  const query =
+    `SELECT d.id, d.name, r.salary AS budget
+    FROM employee e
+    JOIN role r
+    ON e.role_id = r.id
+    JOIN department d
+    ON d.id = r.department_id
+    GROUP BY d.id, d.name`
+
+  db.query(query, function (err, res) {
+    if (err) throw err;
+
+    const departmentChoices = res.map(({ id, name }) => ({
+      value: id, name: `${id} ${name}`
+    }));
+
+    console.table(res);
+
+    promptAddRole(departmentChoices);
+  });
+}
+
+function promptAddRole(departmentChoices) {
+
+  inquirer
+    .prompt([
+      {
+        type: "input",
+        name: "roleTitle",
+        message: "Role title?"
+      },
+      {
+        type: "input",
+        name: "roleSalary",
+        message: "Role Salary"
+      },
+      {
+        type: "list",
+        name: "departmentId",
+        message: "Department?",
+        choices: departmentChoices
+      },
+    ])
+    .then(function (answer) {
+
+      const query = `INSERT INTO role SET ?`
+
+      db.query(query, {
+        title: answer.roleTitle,
+        salary: answer.roleSalary,
+        department_id: answer.departmentId
+      },
+        function (err, res) {
+          if (err) throw err;
+
+          console.table(res);
+          console.log("Role Inserted!");
+
+          firstPrompt();
+        });
+
+    });
+}
